@@ -12,9 +12,14 @@ class UserListScreen extends StatefulWidget {
 
 class _UserListScreenState extends State<UserListScreen> {
   final ApiService _apiService = ApiService();
-  List<User> _users = [];
+  final TextEditingController _searchController = TextEditingController();
+
+  List<User> _allUsers = [];
+  List<User> _filteredUsers = [];
+  
   bool _isLoading = true;
   String? _errorMessage;
+  int _selectedTimeoutSeconds = 10; // Latihan 5: Parameter Timeout
 
   @override
   void initState() {
@@ -29,9 +34,12 @@ class _UserListScreenState extends State<UserListScreen> {
     });
 
     try {
-      final users = await _apiService.getUsers();
+      final users = await _apiService.getUsers(
+        timeout: Duration(seconds: _selectedTimeoutSeconds),
+      );
       setState(() {
-        _users = users;
+        _allUsers = users;
+        _filteredUsers = users;
         _isLoading = false;
       });
     } catch (e) {
@@ -42,6 +50,17 @@ class _UserListScreenState extends State<UserListScreen> {
     }
   }
 
+  // Latihan 4: Real-time search filter
+  void _filterUsers(String query) {
+    setState(() {
+      _filteredUsers = _allUsers
+          .where((user) =>
+              user.name.toLowerCase().contains(query.toLowerCase()) ||
+              user.email.toLowerCase().contains(query.toLowerCase()))
+          .toList();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -50,33 +69,49 @@ class _UserListScreenState extends State<UserListScreen> {
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadUsers,
-            tooltip: 'Muat ulang',
+          // Dropdown Latihan 5 untuk ubah timeout
+          PopupMenuButton<int>(
+            icon: const Icon(Icons.timer),
+            tooltip: 'Ubah Duration Timeout',
+            onSelected: (seconds) {
+              setState(() => _selectedTimeoutSeconds = seconds);
+              _loadUsers();
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(value: 1, child: Text('Timeout 1 Detik (Tes Timeout)')),
+              const PopupMenuItem(value: 5, child: Text('Timeout 5 Detik')),
+              const PopupMenuItem(value: 10, child: Text('Timeout 10 Detik (Default)')),
+            ],
           ),
         ],
       ),
-      body: _buildBody(),
+      body: Column(
+        children: [
+          // Latihan 4: Search Bar
+          Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: TextField(
+              controller: _searchController,
+              onChanged: _filterUsers,
+              decoration: InputDecoration(
+                hintText: 'Cari berdasarkan nama atau email...',
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                contentPadding: const EdgeInsets.symmetric(vertical: 8),
+              ),
+            ),
+          ),
+          Expanded(child: _buildBody()),
+        ],
+      ),
     );
   }
 
   Widget _buildBody() {
-    // Loading state
     if (_isLoading) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('Memuat data...'),
-          ],
-        ),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
-    // Error state
     if (_errorMessage != null) {
       return Center(
         child: Padding(
@@ -84,94 +119,29 @@ class _UserListScreenState extends State<UserListScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
-                Icons.error_outline,
-                size: 64,
-                color: Colors.red,
-              ),
+              const Icon(Icons.error_outline, size: 64, color: Colors.red),
               const SizedBox(height: 16),
-              const Text(
-                'Terjadi Kesalahan',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                _errorMessage!,
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.grey),
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton.icon(
-                onPressed: _loadUsers,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Coba Lagi'),
-              ),
+              Text(_errorMessage!, textAlign: TextAlign.center),
+              const SizedBox(height: 16),
+              ElevatedButton(onPressed: _loadUsers, child: const Text('Coba Lagi')),
             ],
           ),
         ),
       );
     }
 
-    // Empty state
-    if (_users.isEmpty) {
-      return const Center(
-        child: Text('Tidak ada data pengguna'),
-      );
+    if (_filteredUsers.isEmpty) {
+      return const Center(child: Text('Data pengguna tidak ditemukan'));
     }
 
-    // Success state
     return RefreshIndicator(
       onRefresh: _loadUsers,
       child: ListView.builder(
-        itemCount: _users.length,
+        itemCount: _filteredUsers.length,
         itemBuilder: (context, index) {
-          final user = _users[index];
-          return UserCard(
-            user: user,
-            onTap: () {
-              _showUserDetail(user);
-            },
-          );
+          final user = _filteredUsers[index];
+          return UserCard(user: user);
         },
-      ),
-    );
-  }
-
-  void _showUserDetail(User user) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              user.name,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text('Username: ${user.username}'),
-            Text('Email: ${user.email}'),
-            Text('Telepon: ${user.phone}'),
-            Text('Website: ${user.website}'),
-            Text('Perusahaan: ${user.companyName}'),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Tutup'),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

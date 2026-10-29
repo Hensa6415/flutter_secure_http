@@ -3,92 +3,58 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../models/user.dart';
+import '../models/post.dart';
 
 class ApiService {
   static const String _baseUrl = 'https://jsonplaceholder.typicode.com';
-  static const Duration _timeout = Duration(seconds: 10);
 
-  // GET /users
-  Future<List<User>> getUsers() async {
+  // Latihan 5: Configurable Timeout (default 10 detik)
+  Future<List<User>> getUsers({Duration timeout = const Duration(seconds: 10)}) async {
     try {
-      print('Request GET: $_baseUrl/users');
+      print('Request GET: $_baseUrl/users (Timeout: ${timeout.inSeconds}s)');
       final response = await http
           .get(Uri.parse('$_baseUrl/users'))
-          .timeout(_timeout);
-      
-      // Logging aman: hanya status code
-      print('Response status: ${response.statusCode}');
+          .timeout(timeout);
       
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
         return data.map((json) => User.fromJson(json)).toList();
       } else {
-        throw HttpException(
-          'Gagal memuat data. Status: ${response.statusCode}',
-        );
+        throw Exception('Gagal memuat data. Status: ${response.statusCode}');
       }
     } on TimeoutException {
-      throw Exception('Request timeout. Periksa koneksi internet Anda.');
+      throw Exception('Request timeout (${timeout.inSeconds}s). Periksa koneksi internet Anda.');
     } on SocketException {
-      throw Exception('Tidak ada koneksi internet. Periksa jaringan Anda.');
-    } on FormatException {
-      throw Exception('Format data tidak valid.');
+      throw Exception('Tidak ada koneksi internet.');
     } catch (e) {
       throw Exception('Terjadi kesalahan: $e');
     }
   }
 
-  // GET /users/{id}
-  Future<User> getUserById(int id) async {
+  // Latihan 3: Method GET /posts
+  Future<List<Post>> getPosts() async {
     try {
-      print('Request GET: $_baseUrl/users/$id');
       final response = await http
-          .get(Uri.parse('$_baseUrl/users/$id'))
-          .timeout(_timeout);
-      
-      print('Response status: ${response.statusCode}');
+          .get(Uri.parse('$_baseUrl/posts'))
+          .timeout(const Duration(seconds: 10));
       
       if (response.statusCode == 200) {
-        final Map<String, dynamic> data = jsonDecode(response.body);
-        return User.fromJson(data);
+        final List<dynamic> data = jsonDecode(response.body);
+        return data.map((json) => Post.fromJson(json)).toList();
       } else {
-        throw HttpException(
-          'Gagal memuat data. Status: ${response.statusCode}',
-        );
+        throw Exception('Gagal memuat posts.');
       }
-    } on TimeoutException {
-      throw Exception('Request timeout. Periksa koneksi internet Anda.');
-    } on SocketException {
-      throw Exception('Tidak ada koneksi internet. Periksa jaringan Anda.');
     } catch (e) {
       throw Exception('Terjadi kesalahan: $e');
     }
   }
 
-  // Simulasi login untuk mendapatkan token
   Future<String> login(String email, String password) async {
-    try {
-      // Simulasi request login
-      await Future.delayed(const Duration(seconds: 1));
-      if (email.isNotEmpty && password.isNotEmpty) {
-        // Token dummy (dalam aplikasi nyata, ini dari server)
-        final token = 'dummy_token_${DateTime.now().millisecondsSinceEpoch}';
-        // Logging aman: tidak mencetak token
-        print('Login berhasil untuk email: $email');
-        return token;
-      } else {
-        throw Exception('Email dan password tidak boleh kosong');
-      }
-    } catch (e) {
-      throw Exception('Login gagal: $e');
+    await Future.delayed(const Duration(seconds: 1));
+    if (email.isNotEmpty && password.isNotEmpty) {
+      return 'dummy_token_${DateTime.now().millisecondsSinceEpoch}';
+    } else {
+      throw Exception('Email dan password tidak boleh kosong');
     }
   }
-}
-
-class HttpException implements Exception {
-  final String message;
-  HttpException(this.message);
-  
-  @override
-  String toString() => message;
 }
