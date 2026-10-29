@@ -2,23 +2,29 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class SecureStorageService {
   static const _storage = FlutterSecureStorage(
-    aOptions: AndroidOptions(encryptedSharedPreferences: true),
-    iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
+    aOptions: AndroidOptions(
+      encryptedSharedPreferences: true,
+    ),
+    iOptions: IOSOptions(
+      accessibility: KeychainAccessibility.first_unlock,
+    ),
   );
+
   // Key yang digunakan
   static const String _tokenKey = 'auth_token';
   static const String _pinKey = 'user_pin';
+
   // Menyimpan token
   Future<void> saveToken(String token) async {
     await _storage.write(key: _tokenKey, value: token);
-    // ✅ Logging aman: tidak mencetak token
+    // Logging aman: tidak mencetak token
     print('Token berhasil disimpan');
   }
 
   // Membaca token
   Future<String?> getToken() async {
     final token = await _storage.read(key: _tokenKey);
-    // ✅ Logging aman: hanya menyebutkan status
+    // Logging aman: hanya menyebutkan status
     print(token != null ? 'Token ditemukan' : 'Token tidak ditemukan');
     return token;
   }

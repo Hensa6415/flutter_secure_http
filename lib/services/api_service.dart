@@ -7,6 +7,7 @@ import '../models/user.dart';
 class ApiService {
   static const String _baseUrl = 'https://jsonplaceholder.typicode.com';
   static const Duration _timeout = Duration(seconds: 10);
+
   // GET /users
   Future<List<User>> getUsers() async {
     try {
@@ -14,8 +15,10 @@ class ApiService {
       final response = await http
           .get(Uri.parse('$_baseUrl/users'))
           .timeout(_timeout);
+      
       // Logging aman: hanya status code
       print('Response status: ${response.statusCode}');
+      
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
         return data.map((json) => User.fromJson(json)).toList();
@@ -42,7 +45,9 @@ class ApiService {
       final response = await http
           .get(Uri.parse('$_baseUrl/users/$id'))
           .timeout(_timeout);
+      
       print('Response status: ${response.statusCode}');
+      
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(response.body);
         return User.fromJson(data);
@@ -68,7 +73,7 @@ class ApiService {
       if (email.isNotEmpty && password.isNotEmpty) {
         // Token dummy (dalam aplikasi nyata, ini dari server)
         final token = 'dummy_token_${DateTime.now().millisecondsSinceEpoch}';
-        // ✅ Logging aman: tidak mencetak token
+        // Logging aman: tidak mencetak token
         print('Login berhasil untuk email: $email');
         return token;
       } else {
@@ -83,6 +88,7 @@ class ApiService {
 class HttpException implements Exception {
   final String message;
   HttpException(this.message);
+  
   @override
   String toString() => message;
 }

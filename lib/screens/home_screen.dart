@@ -4,6 +4,7 @@ import 'user_list_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
@@ -11,8 +12,10 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final SecureStorageService _storageService = SecureStorageService();
   final TextEditingController _tokenController = TextEditingController();
+  
   String? _savedToken;
   bool _hasToken = false;
+
   @override
   void initState() {
     super.initState();
@@ -28,6 +31,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _checkToken() async {
     final hasToken = await _storageService.hasToken();
     final token = await _storageService.getToken();
+    
     setState(() {
       _hasToken = hasToken;
       _savedToken = token;
@@ -44,9 +48,11 @@ class _HomeScreenState extends State<HomeScreen> {
       );
       return;
     }
+    
     await _storageService.saveToken(_tokenController.text.trim());
     _tokenController.clear();
     await _checkToken();
+    
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -60,6 +66,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _deleteToken() async {
     await _storageService.deleteToken();
     await _checkToken();
+    
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -166,9 +173,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ? 'Token tersimpan: ${_savedToken!.substring(0, 10)}...'
                                     : 'Belum ada token tersimpan',
                                 style: TextStyle(
-                                  color: _hasToken
-                                      ? Colors.green[800]
-                                      : Colors.red[800],
+                                  color: _hasToken ? Colors.green[800] : Colors.red[800],
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -181,6 +186,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 16),
+              
               // Section 2: HTTP Request
               Card(
                 child: Padding(
@@ -232,6 +238,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 16),
+              
               // Section 3: Catatan Keamanan
               Card(
                 color: Colors.amber[50],

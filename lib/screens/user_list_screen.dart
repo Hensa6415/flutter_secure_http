@@ -5,6 +5,7 @@ import '../widgets/user_card.dart';
 
 class UserListScreen extends StatefulWidget {
   const UserListScreen({super.key});
+
   @override
   State<UserListScreen> createState() => _UserListScreenState();
 }
@@ -14,6 +15,7 @@ class _UserListScreenState extends State<UserListScreen> {
   List<User> _users = [];
   bool _isLoading = true;
   String? _errorMessage;
+
   @override
   void initState() {
     super.initState();
@@ -25,6 +27,7 @@ class _UserListScreenState extends State<UserListScreen> {
       _isLoading = true;
       _errorMessage = null;
     });
+
     try {
       final users = await _apiService.getUsers();
       setState(() {
@@ -72,6 +75,7 @@ class _UserListScreenState extends State<UserListScreen> {
         ),
       );
     }
+
     // Error state
     if (_errorMessage != null) {
       return Center(
@@ -80,11 +84,18 @@ class _UserListScreenState extends State<UserListScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.error_outline, size: 64, color: Colors.red),
+              const Icon(
+                Icons.error_outline,
+                size: 64,
+                color: Colors.red,
+              ),
               const SizedBox(height: 16),
               const Text(
                 'Terjadi Kesalahan',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
@@ -103,10 +114,14 @@ class _UserListScreenState extends State<UserListScreen> {
         ),
       );
     }
+
     // Empty state
     if (_users.isEmpty) {
-      return const Center(child: Text('Tidak ada data pengguna'));
+      return const Center(
+        child: Text('Tidak ada data pengguna'),
+      );
     }
+
     // Success state
     return RefreshIndicator(
       onRefresh: _loadUsers,
@@ -136,7 +151,10 @@ class _UserListScreenState extends State<UserListScreen> {
           children: [
             Text(
               user.name,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 8),
             Text('Username: ${user.username}'),
