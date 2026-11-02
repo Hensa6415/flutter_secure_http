@@ -12,19 +12,40 @@ class UserListScreen extends StatefulWidget {
 
 class _UserListScreenState extends State<UserListScreen> {
   final ApiService _apiService = ApiService();
-  final TextEditingController _searchController = TextEditingController();
-
-  List<User> _allUsers = [];
-  List<User> _filteredUsers = [];
+  final TextEditingController _searchController = TextEditingController(); 
+  final TextEditingController _timeoutController = TextEditingController(text: '10'); 
   
+  List<User> _users = [];
+  List<User> _filteredUsers = []; 
   bool _isLoading = true;
   String? _errorMessage;
-  int _selectedTimeoutSeconds = 10; // Latihan 5: Parameter Timeout
 
   @override
   void initState() {
     super.initState();
     _loadUsers();
+    _searchController.addListener(_filterUsers);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _timeoutController.dispose();
+    super.dispose();
+  }
+
+  void _filterUsers() {
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      if (query.isEmpty) {
+        _filteredUsers = _users;
+      } else {
+        _filteredUsers = _users.where((user) {
+          return user.name.toLowerCase().contains(query) || 
+                 user.email.toLowerCase().contains(query);
+        }).toList();
+      }
+    });
   }
 
   Future<void> _loadUsers() async {
@@ -32,14 +53,16 @@ class _UserListScreenState extends State<UserListScreen> {
       _isLoading = true;
       _errorMessage = null;
     });
-
+    
     try {
+      int timeoutSeconds = int.tryParse(_timeoutController.text.trim()) ?? 10;
       final users = await _apiService.getUsers(
-        timeout: Duration(seconds: _selectedTimeoutSeconds),
+        timeout: Duration(seconds: timeoutSeconds)
       );
+      
       setState(() {
-        _allUsers = users;
-        _filteredUsers = users;
+        _users = users;
+        _filteredUsers = users; 
         _isLoading = false;
       });
     } catch (e) {
@@ -50,17 +73,6 @@ class _UserListScreenState extends State<UserListScreen> {
     }
   }
 
-  // Latihan 4: Real-time search filter
-  void _filterUsers(String query) {
-    setState(() {
-      _filteredUsers = _allUsers
-          .where((user) =>
-              user.name.toLowerCase().contains(query.toLowerCase()) ||
-              user.email.toLowerCase().contains(query.toLowerCase()))
-          .toList();
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -68,39 +80,57 @@ class _UserListScreenState extends State<UserListScreen> {
         title: const Text('Daftar Pengguna'),
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
-        actions: [
-          // Dropdown Latihan 5 untuk ubah timeout
-          PopupMenuButton<int>(
-            icon: const Icon(Icons.timer),
-            tooltip: 'Ubah Duration Timeout',
-            onSelected: (seconds) {
-              setState(() => _selectedTimeoutSeconds = seconds);
-              _loadUsers();
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(value: 1, child: Text('Timeout 1 Detik (Tes Timeout)')),
-              const PopupMenuItem(value: 5, child: Text('Timeout 5 Detik')),
-              const PopupMenuItem(value: 10, child: Text('Timeout 10 Detik (Default)')),
-            ],
-          ),
-        ],
       ),
       body: Column(
         children: [
-          // Latihan 4: Search Bar
           Padding(
-            padding: const EdgeInsets.all(12.0),
+            padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 8.0),
             child: TextField(
               controller: _searchController,
-              onChanged: _filterUsers,
               decoration: InputDecoration(
                 hintText: 'Cari berdasarkan nama atau email...',
                 prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _timeoutController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: 'Timeout (detik)',
+                      prefixIcon: const Icon(Icons.timer),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    FocusScope.of(context).unfocus(); 
+                    _loadUsers(); 
+                  },
+                  icon: const Icon(Icons.download),
+                  label: const Text('Muat API'),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
+                    backgroundColor: Colors.deepPurple,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
           Expanded(child: _buildBody()),
         ],
       ),
@@ -111,37 +141,72 @@ class _UserListScreenState extends State<UserListScreen> {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
-
     if (_errorMessage != null) {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 64, color: Colors.red),
-              const SizedBox(height: 16),
-              Text(_errorMessage!, textAlign: TextAlign.center),
-              const SizedBox(height: 16),
-              ElevatedButton(onPressed: _loadUsers, child: const Text('Coba Lagi')),
-            ],
+          padding: const EdgeInsets.all(16.0),
+          child: Text(
+            _errorMessage!, 
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.red, fontSize: 16),
           ),
         ),
       );
     }
-
     if (_filteredUsers.isEmpty) {
-      return const Center(child: Text('Data pengguna tidak ditemukan'));
+      return const Center(child: Text('Pengguna tidak ditemukan'));
     }
-
     return RefreshIndicator(
       onRefresh: _loadUsers,
       child: ListView.builder(
         itemCount: _filteredUsers.length,
         itemBuilder: (context, index) {
           final user = _filteredUsers[index];
-          return UserCard(user: user);
+          return UserCard(
+            user: user,
+            onTap: () {
+              // PERBAIKAN: Memanggil fungsi memunculkan detail
+              _showUserDetail(user);
+            },
+          );
         },
+      ),
+    );
+  }
+
+  // FUNGSI DETAIL USER DARI LANGKAH 6
+  void _showUserDetail(User user) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              user.name,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text('Username: ${user.username}'),
+            Text('Email: ${user.email}'),
+            Text('Telepon: ${user.phone}'),
+            Text('Website: ${user.website}'),
+            Text('Perusahaan: ${user.companyName}'),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Tutup'),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

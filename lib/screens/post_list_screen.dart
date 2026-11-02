@@ -26,7 +26,6 @@ class _PostListScreenState extends State<PostListScreen> {
       _isLoading = true;
       _errorMessage = null;
     });
-
     try {
       final posts = await _apiService.getPosts();
       setState(() {
@@ -45,8 +44,8 @@ class _PostListScreenState extends State<PostListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Daftar Posts'),
-        backgroundColor: Colors.teal,
+        title: const Text('Daftar Postingan'),
+        backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
       ),
       body: _isLoading
@@ -60,21 +59,8 @@ class _PostListScreenState extends State<PostListScreen> {
                     return Card(
                       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: Colors.teal,
-                          child: Text('${post.id}', style: const TextStyle(color: Colors.white)),
-                        ),
-                        title: Text(
-                          post.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        subtitle: Text(
-                          post.body,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                        title: Text(post.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                        subtitle: Text(post.body, maxLines: 2, overflow: TextOverflow.ellipsis),
                       ),
                     );
                   },
